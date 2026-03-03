@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String         @id @default(cuid())
+  email     String         @unique
+  name      String?
+  createdAt DateTime       @default(now())
+  projects  Project[]
+  todos     Todo[]
+  reviews   WeeklyReview[]
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  color       String   @default("#6366f1")
+  description String?
+  deadline    DateTime?
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  todos       Todo[]
+
+  @@index([userId])
+}
+
+model Todo {
+  id          String   @id @default(cuid())
+  userId      String
+  projectId   String?
+  title       String
+  description String?
+  status      String   @default("todo")
+  priority    String   @default("medium")
+  dueDate     DateTime?
+  completedAt DateTime?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([userId, dueDate])
+  @@index([projectId])
+}
+
+model WeeklyReview {
+  id        String   @id @default(cuid())
+  userId    String
+  weekStart DateTime
+  content   String
+  stats     Json
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStart])
+  @@index([userId, createdAt])
+}
